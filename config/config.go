@@ -8,22 +8,25 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	Server   Server   `mapstructure:",squash"`
-	Postgres Postgres `mapstructure:",squash"`
-}
+type (
+	Config struct {
+		Server   `mapstructure:",squash"`
+		Postgres `mapstructure:",squash"`
+		Secret   string `mapstructure:"SECRET"`
+	}
 
-type Server struct {
-	Port string `mapstructure:"SERVER_PORT"`
-}
+	Server struct {
+		Port string `mapstructure:"SERVER_PORT"`
+	}
 
-type Postgres struct {
-	PgUser     string `mapstructure:"PG_USER"`
-	PgPassword string `mapstructure:"PG_PASSWORD"`
-	PgHost     string `mapstructure:"PG_HOST"`
-	PgPort     string `mapstructure:"PG_PORT"`
-	PgDB       string `mapstructure:"PG_DB"`
-}
+	Postgres struct {
+		PgUser     string `mapstructure:"PG_USER"`
+		PgPassword string `mapstructure:"PG_PASSWORD"`
+		PgHost     string `mapstructure:"PG_HOST"`
+		PgPort     string `mapstructure:"PG_PORT"`
+		PgDB       string `mapstructure:"PG_DB"`
+	}
+)
 
 func (c *Config) LoadEnv(path string) error {
 
