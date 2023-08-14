@@ -25,23 +25,6 @@ type AuthRepo struct {
 	*postgres.PostgreDB
 }
 
-/*
-sqlCheckUser = `WITH user_check AS (
-
-	    SELECT id, password
-	    FROM users
-	    WHERE login = $1
-		)
-		SELECT id, CASE
-		    WHEN EXISTS (SELECT 1 FROM user_check) THEN
-		        CASE
-		            WHEN password = $2 THEN 'success'
-		            ELSE 'wrong_password'
-		        END
-		    ELSE 'user_not_found'
-		END AS result
-		FROM user_check;`
-*/
 const (
 	sqlCreateUser = `INSERT INTO users (login, password) VALUES ($1,$2) returning id`
 
@@ -56,8 +39,11 @@ const (
 	sqlCheckToken = `SELECT id, user_id, token, expiration_time FROM sessions WHERE token = $1 `
 
 	sqlAuditHistory = `SELECT id, user_id, time, event FROM audit WHERE user_id = $1`
+
+	sqlDeleteAuditByUserID = `DELETE FROM audit WHERE user_id = $1`
 )
 
+// Добавляет нового пользователя.
 func (a *AuthRepo) CreateUser(ctx context.Context, username, hashPassword string) error {
 	var id int
 	err := a.Pool.QueryRow(ctx, sqlCreateUser, username, hashPassword).Scan(&id)
@@ -79,7 +65,7 @@ func (a *AuthRepo) CreateUser(ctx context.Context, username, hashPassword string
 	return nil
 }
 
-// SingIn implements auth.AuthRepo.
+// Сохраняет токен при успешной аутентивигации.
 func (a *AuthRepo) StoreToken(ctx context.Context, session *models.Session) error {
 
 	_, err := a.Pool.Exec(ctx, sqlSaveToken, session.UserID, session.Token, session.ExpirationTime)
@@ -101,6 +87,7 @@ func (a *AuthRepo) StoreToken(ctx context.Context, session *models.Session) erro
 	return nil
 }
 
+// Проверяет, существует ли в базе данных пользователь с таким именем. Возвращет всю информацию о пользователе.
 func (a *AuthRepo) CheckUser(ctx context.Context, username string) (*models.User, error) {
 	var user models.User
 	row := a.Pool.QueryRow(ctx, sqlCheckUser, username)
@@ -112,6 +99,7 @@ func (a *AuthRepo) CheckUser(ctx context.Context, username string) (*models.User
 	return &user, nil
 }
 
+// Сохраняет информацию о попытках аутентификации пользователя.
 func (a *AuthRepo) storeAudit(ctx context.Context, audit *models.AuthAudit) error {
 	_, err := a.Pool.Exec(ctx, sqlCreateAuditRecord, audit.UserID, audit.Timestamp, audit.Event)
 	if err != nil {
@@ -121,6 +109,7 @@ func (a *AuthRepo) storeAudit(ctx context.Context, audit *models.AuthAudit) erro
 	return nil
 }
 
+// Увеличивает счетчик неудачных попыток аутентификации.
 func (a *AuthRepo) WrongPassword(ctx context.Context, userId int) error {
 	var attempts int
 	err := a.Pool.QueryRow(ctx, sqlAttemptsUpdate, userId).Scan(&attempts)
@@ -151,6 +140,7 @@ func (a *AuthRepo) WrongPassword(ctx context.Context, userId int) error {
 	return nil
 }
 
+// Проверяет полученный токен на валидность.
 func (a *AuthRepo) CheckToken(ctx context.Context, token string) (*models.Session, error) {
 	var session models.Session
 	row := a.Pool.QueryRow(ctx, sqlCheckToken, token)
@@ -164,12 +154,14 @@ func (a *AuthRepo) CheckToken(ctx context.Context, token string) (*models.Sessio
 	}
 
 	if time.Now().Unix() > session.ExpirationTime {
-		return nil, nil
+		return &models.Session{}, nil
 	}
 
 	return &session, nil
 
 }
+
+// Получает весь аудит пользователя.
 func (a *AuthRepo) GetHistory(ctx context.Context, userId int) ([]models.AuthAudit, error) {
 	rows, err := a.Pool.Query(ctx, sqlAuditHistory, userId)
 	if err != nil {
@@ -197,10 +189,13 @@ func (a *AuthRepo) GetHistory(ctx context.Context, userId int) ([]models.AuthAud
 
 	return history, nil
 }
-func (a *AuthRepo) DeleteHistory(ctx context.Context, username string) {
-	// check token
 
-	// delete history
+// Очищает аудит пользователя.
+func (a *AuthRepo) DeleteHistory(ctx context.Context, userId int) error {
+	_, err := a.Pool.Exec(ctx, sqlDeleteAuditByUserID, userId)
+	if err != nil {
+		return errors.Wrap(err, "failed to make delete query")
+	}
+
+	return nil
 }
-
-//тут пишу методы для работы с бд

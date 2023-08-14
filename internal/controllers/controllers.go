@@ -21,13 +21,6 @@ func (r *authRoutes) signUp(c *gin.Context) {
 		return
 	}
 
-	// hash, err := bcrypt.GenerateFromPassword([]byte(body.Password), 10)
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{
-	// 		"error": "Failed to hash body",
-	// 	})
-	// }
-
 	err := r.SignUp(c.Request.Context(), body.Login, body.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -69,20 +62,12 @@ func (r *authRoutes) signIn(c *gin.Context) {
 }
 
 func (r *authRoutes) history(c *gin.Context) {
-
 	token := c.Request.Header.Get("X-Token")
-
-	if c.BindHeader(&token) != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "can't read header",
-		})
-		return
-	}
 
 	history, err := r.History(c.Request.Context(), token)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "internal error",
+			"error": err,
 		})
 		return
 	}
@@ -91,9 +76,17 @@ func (r *authRoutes) history(c *gin.Context) {
 }
 
 func (r *authRoutes) deleteHistory(c *gin.Context) {
-	// take token
+	token := c.Request.Header.Get("X-Token")
 
-	// auth validate token
+	err := r.Clear(c.Request.Context(), token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err,
+		})
+		return
+	}
 
-	// response status
+	c.JSON(http.StatusOK, gin.H{
+		"message": " history is deleted",
+	})
 }

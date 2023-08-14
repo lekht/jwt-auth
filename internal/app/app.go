@@ -39,7 +39,7 @@ func Run(cfg *config.Config) {
 
 	httpServer := httpserver.New(handler, httpserver.Port(cfg.Server.Port))
 
-	// Waiting signal
+	// Ожидает interrupt сигнал
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
@@ -49,6 +49,7 @@ func Run(cfg *config.Config) {
 	case err := <-httpServer.Notify():
 		log.Println(fmt.Errorf("app - Run - httpServer.Notify: %w", err))
 	}
+
 	// Shutdown
 	err = httpServer.Shutdown()
 	if err != nil {

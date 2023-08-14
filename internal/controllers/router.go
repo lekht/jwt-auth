@@ -21,6 +21,6 @@ func NewRouter(handler *gin.Engine, a auth.Authentification) {
 		h.POST("/signup", r.signUp)
 		h.POST("/signin", r.signIn)
 		h.GET("/history", r.history)
-		h.GET("/clear", r.deleteHistory)
+		h.DELETE("/history", r.deleteHistory)
 	}
 }
