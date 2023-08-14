@@ -30,5 +30,6 @@ curl -i -H "X-Token: <token_here>" -X GET http://localhost:3000/auth/history && 
 
 ## Очищение аудита
 Очищает аудит пользователя. Принимает header X-Token, который возвращается в теле SignIn запроса 
-```curl -i -H "X-Token: <token_here>" -X DELETE http://localhost:3000/auth/history && echo
+```
+curl -i -H "X-Token: <token_here>" -X DELETE http://localhost:3000/auth/history && echo
 ```
